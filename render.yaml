@@ -9,7 +9,7 @@ services:
         value: 3.11.4
       - key: RENDER_DISK_PATH
         value: /var/data/uploads
-    disks:
+    disk:
       - name: uploads-disk
         mountPath: /var/data/uploads
         sizeGB: 1
