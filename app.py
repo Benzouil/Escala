@@ -20,7 +20,7 @@ logging.basicConfig(level=logging.INFO)
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
-# --- Fonctions de nettoyage (inchangées) ---
+# --- Logique de nettoyage de errpt.py (Général) ---
 def clean_errpt_content(text_content):
     """Nettoie le contenu d'un errpt en supprimant les blocs Detail/Sense Data."""
     output = io.StringIO()
@@ -45,12 +45,41 @@ def clean_errpt_content(text_content):
         output.write(line + '\n')
     return output.getvalue()
 
+# --- Nouvelle logique de nettoyage de errpt_P7.py ---
+def clean_p7_errpt_content(text_content):
+    """Nettoie les sections 'ADDITIONAL HEX DATA' pour les logs Power 7."""
+    output = io.StringIO()
+    hex_section_header_target = "ADDITIONAL HEX DATA"
+    header_pattern = re.compile(r"^\s*" + re.escape(hex_section_header_target) + r"\s*$", re.IGNORECASE)
+    
+    # Helper function from errpt_P7.py
+    def is_hex_data_line(line):
+        stripped_line = line.strip()
+        if not stripped_line:
+            return False
+        return all(c in "0123456789abcdefABCDEF " for c in stripped_line)
+
+    in_hex_block = False
+    for line in text_content.splitlines():
+        if header_pattern.match(line.strip()):
+            in_hex_block = True
+            continue
+
+        if in_hex_block:
+            if is_hex_data_line(line):
+                continue
+            else:
+                in_hex_block = False
+        
+        output.write(line + '\n')
+        
+    return output.getvalue()
+
 # --- Fonctions d'analyse (inchangées) ---
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 def extract_labels(file_content):
-    """Extrait et compte les 'LABELs' d'un fichier errpt/snap."""
     label_pattern = re.compile(r'^LABEL:\s+(\S+)', re.MULTILINE)
     labels = label_pattern.findall(file_content)
     if not labels:
@@ -60,12 +89,7 @@ def extract_labels(file_content):
     return pd.DataFrame(sorted_labels, columns=['Label', 'Count'])
 
 def extract_general_snap_info(file_content):
-    """Extrait des informations générales d'un fichier 'general.snap'."""
     all_info = []
-    # (Le reste de la fonction est complexe et reste inchangé)
-    # Pour la simplicité, on assume qu'elle retourne un DataFrame pandas
-    # Dans une vraie application, le code complet de la fonction serait ici.
-    # Pour cet exemple, nous allons simuler un retour
     patterns = {
         'Version Firmware': re.compile(r'^fwversion\s+([\S,]+)\s', re.MULTILINE),
         'Nom du Modèle': re.compile(r'^modelname\s+([\S,]+)\s', re.MULTILINE),
@@ -85,23 +109,26 @@ def extract_general_snap_info(file_content):
 @app.route('/', methods=['GET', 'POST'])
 def upload_file():
     if request.method == 'POST':
-        # Vérifier quel bouton a été pressé pour traiter la bonne requête
+        if 'file' not in request.files or request.files['file'].filename == '':
+            flash('Veuillez sélectionner un fichier.', 'error')
+            return redirect(request.url)
         
-        # --- Logique pour le formulaire n°1 : Analyse ---
-        if 'analyze_button' in request.form:
-            if 'file' not in request.files or request.files['file'].filename == '':
-                flash('Veuillez sélectionner un fichier pour l\'analyse.', 'error')
-                return redirect(request.url)
-            
-            file = request.files['file']
-            if file and allowed_file(file.filename):
-                filename = secure_filename(file.filename)
-                content = file.read().decode('utf-8', errors='ignore')
+        file = request.files['file']
+        
+        if not (file and allowed_file(file.filename)):
+            flash('Type de fichier non autorisé ou fichier invalide.', 'error')
+            return redirect(request.url)
 
+        filename = secure_filename(file.filename)
+        content = file.read().decode('utf-8', errors='ignore')
+
+        try:
+            # --- Logique pour le formulaire n°1 : Analyse ---
+            if 'analyze_button' in request.form:
                 if filename.endswith('.snap'):
                     analysis_df = extract_general_snap_info(content)
                     title = f"Analyse de {filename}"
-                else: # errpt.out or other
+                else:
                     analysis_df = extract_labels(content)
                     title = f"Résumé des erreurs pour {filename}"
                 
@@ -112,31 +139,33 @@ def upload_file():
                 flash('Analyse terminée avec succès.', 'success')
                 return render_template('results.html', tables=[{'title': title, 'df': analysis_df}])
 
-        # --- Logique pour le formulaire n°2 : Nettoyage ---
-        if 'clean_button' in request.form:
-            if 'file' not in request.files or request.files['file'].filename == '':
-                flash('Veuillez sélectionner un fichier pour le nettoyage.', 'error')
-                return redirect(request.url)
-
-            file = request.files['file']
-            if file and allowed_file(file.filename):
-                filename = secure_filename(file.filename)
-                content = file.read().decode('utf-8', errors='ignore')
-                
+            # --- Logique pour le formulaire n°2 : Nettoyage Général ---
+            elif 'clean_button' in request.form:
                 cleaned_content = clean_errpt_content(content)
                 new_filename = f"cleaned_{filename}"
-                
-                cleaned_file_path = os.path.join(app.config['UPLOAD_FOLDER'], new_filename)
-                with open(cleaned_file_path, 'w', encoding='utf-8') as f:
-                    f.write(cleaned_content)
-                
-                flash('Fichier nettoyé avec succès !', 'success')
-                return render_template('results.html', download_filename=new_filename)
+            
+            # --- Logique pour le formulaire n°3 : Nettoyage Power 7 ---
+            elif 'clean_p7_button' in request.form:
+                cleaned_content = clean_p7_errpt_content(content)
+                new_filename = f"cleaned_P7_{filename}"
 
-        flash('Une erreur est survenue.', 'error')
-        return redirect(request.url)
+            else:
+                flash('Action non reconnue.', 'error')
+                return redirect(request.url)
 
-    # En méthode GET, on affiche simplement la page
+            # Sauvegarde et téléchargement pour les deux cas de nettoyage
+            cleaned_file_path = os.path.join(app.config['UPLOAD_FOLDER'], new_filename)
+            with open(cleaned_file_path, 'w', encoding='utf-8') as f:
+                f.write(cleaned_content)
+            
+            flash('Fichier nettoyé avec succès !', 'success')
+            return render_template('results.html', download_filename=new_filename)
+
+        except Exception as e:
+            logging.error(f"Une erreur est survenue lors du traitement : {e}")
+            flash(f"Une erreur inattendue est survenue : {e}", "error")
+            return redirect(request.url)
+
     return render_template('upload.html')
 
 @app.route('/download/<filename>')
