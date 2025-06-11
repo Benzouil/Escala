@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Analyseur de Fichiers{% endblock %}</title>
+  <!-- Inclusion de Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Police de caractères Inter pour un look moderne -->
+  <link rel="preconnect" href="https://rsms.me/">
+  <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+  </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+  <div class="container mx-auto mt-10 p-4">
+    <header class="text-center mb-10">
+      <h1 class="text-4xl font-bold text-gray-900">Analyseur de Fichiers de Log</h1>
+      <p class="text-lg text-gray-600">Téléchargez un fichier `errpt.out` ou `general.snap` pour l'analyser.</p>
+    </header>
+    
+    <!-- Conteneur principal pour le contenu de la page et les messages flash -->
+    <main class="bg-white p-8 rounded-lg shadow-md max-w-4xl mx-auto">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <!-- Affichage des messages flash avec des couleurs différentes selon la catégorie (error, success) -->
+              <div class="p-4 mb-4 text-sm rounded-lg
+                {% if category == 'error' %} bg-red-100 text-red-700
+                {% elif category == 'success' %} bg-green-100 text-green-700
+                {% else %} bg-blue-100 text-blue-700 {% endif %}"
+                role="alert">
+                {{ message }}
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+        
+        <!-- Le contenu spécifique de chaque page sera injecté ici -->
+        {% block content %}{% endblock %}
+    </main>
+    
+    <footer class="text-center mt-8 text-gray-500">
+      <p>&copy; 2025 - Votre Analyseur Moderne</p>
+    </footer>
+  </div>
+</body>
+</html>
