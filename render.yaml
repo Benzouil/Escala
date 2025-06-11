@@ -4,12 +4,14 @@ services:
     env: python
     buildCommand: "pip install -r requirements.txt"
     startCommand: "gunicorn app:app"
+
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.4
       - key: RENDER_DISK_PATH
-        value: /var/data/uploads
+        value: /var/data/uploads  
+
     disk:
-      - name: uploads-disk
-        mountPath: /var/data/uploads
-        sizeGB: 1
+      name: uploads-disk
+      mountPath: /var/data/uploads
+      sizeGB: 1
