@@ -1,59 +1,53 @@
 {% extends "layout.html" %}
 
-{% block title %}Télécharger et Traiter un Fichier{% endblock %}
+{% block title %}Analyse et Nettoyage de Fichiers{% endblock %}
 
 {% block content %}
-<div class="flex flex-col items-center justify-center">
-  <form method="post" enctype="multipart/form-data" class="w-full max-w-2xl">
-    <!-- Zone de glisser-déposer -->
-    <div class="flex items-center justify-center w-full">
-        <label for="dropzone-file" class="flex flex-col items-center justify-center w-full h-64 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
-            <div class="flex flex-col items-center justify-center pt-5 pb-6">
-                <svg class="w-8 h-8 mb-4 text-gray-500" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16">
-                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"/>
-                </svg>
-                <p class="mb-2 text-sm text-gray-500"><span class="font-semibold">Cliquez pour téléverser</span> ou glissez-déposez</p>
-                <p id="file-name" class="text-xs text-gray-500">errpt.out, .log, .snap, .txt</p>
+<div class="space-y-12">
+    <!-- Section 1: Analyse de Fichier -->
+    <div class="p-8 bg-white border border-gray-200 rounded-2xl shadow-sm">
+        <h2 class="text-2xl font-semibold text-gray-900 mb-1">1. Analyser un Fichier</h2>
+        <p class="text-gray-600 mb-6">Obtenez un résumé des erreurs d'un `errpt.out` ou les informations système d'un `general.snap`.</p>
+        
+        <form method="post" enctype="multipart/form-data" class="space-y-4" id="form-analyze">
+            <div>
+                <label for="file-analyze" class="block text-sm font-medium text-gray-700 mb-1">Fichier à analyser :</label>
+                <input type="file" name="file" id="file-analyze" class="block w-full text-sm text-gray-500
+                    file:mr-4 file:py-2 file:px-4
+                    file:rounded-full file:border-0
+                    file:text-sm file:font-semibold
+                    file:bg-indigo-50 file:text-indigo-700
+                    hover:file:bg-indigo-100" required>
             </div>
-            <input id="dropzone-file" type="file" name="file" class="hidden" onchange="updateFileName(this)"/>
-        </label>
+            <div class="text-right">
+                <button type="submit" name="analyze_button" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                    Lancer l'Analyse
+                </button>
+            </div>
+        </form>
     </div>
 
-    <!-- Sélecteur d'action -->
-    <div class="mt-6">
-      <h3 class="mb-4 font-semibold text-gray-900">Choisissez une action :</h3>
-      <ul class="items-center w-full text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-lg sm:flex">
-          <li class="w-full border-b border-gray-200 sm:border-b-0 sm:border-r">
-              <div class="flex items-center ps-3">
-                  <input id="analyse" type="radio" value="analyse" name="clean_type" class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500" checked>
-                  <label for="analyse" class="w-full py-3 ms-2 text-sm font-medium text-gray-900">Analyser (errpt/snap)</label>
-              </div>
-          </li>
-          <li class="w-full border-b border-gray-200 sm:border-b-0 sm:border-r">
-              <div class="flex items-center ps-3">
-                  <input id="clean_errpt" type="radio" value="errpt" name="clean_type" class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500">
-                  <label for="clean_errpt" class="w-full py-3 ms-2 text-sm font-medium text-gray-900">Nettoyer (errpt)</label>
-              </div>
-          </li>
-          <li class="w-full">
-              <div class="flex items-center ps-3">
-                  <input id="clean_eventlog" type="radio" value="eventlog" name="clean_type" class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500">
-                  <label for="clean_eventlog" class="w-full py-3 ms-2 text-sm font-medium text-gray-900">Nettoyer (ASMI EventLog)</label>
-              </div>
-          </li>
-      </ul>
+    <!-- Section 2: Nettoyage de Fichier -->
+    <div class="p-8 bg-white border border-gray-200 rounded-2xl shadow-sm">
+        <h2 class="text-2xl font-semibold text-gray-900 mb-1">2. Nettoyer un Fichier</h2>
+        <p class="text-gray-600 mb-6">Supprimez les blocs "Detail Data" et "Sense Data" d'un fichier `errpt.out` pour le rendre plus lisible.</p>
+        
+        <form method="post" enctype="multipart/form-data" class="space-y-4" id="form-clean">
+            <div>
+                <label for="file-clean" class="block text-sm font-medium text-gray-700 mb-1">Fichier errpt.out à nettoyer :</label>
+                <input type="file" name="file" id="file-clean" class="block w-full text-sm text-gray-500
+                    file:mr-4 file:py-2 file:px-4
+                    file:rounded-full file:border-0
+                    file:text-sm file:font-semibold
+                    file:bg-teal-50 file:text-teal-700
+                    hover:file:bg-teal-100" required>
+            </div>
+            <div class="text-right">
+                <button type="submit" name="clean_button" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500">
+                    Nettoyer et Télécharger
+                </button>
+            </div>
+        </form>
     </div>
-
-    <div class="mt-8 text-center">
-      <input type="submit" value="Lancer le traitement" class="px-6 py-3 text-white bg-indigo-600 rounded-md shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 cursor-pointer transition-colors duration-200">
-    </div>
-  </form>
 </div>
-
-<script>
-  function updateFileName(input) {
-    const fileName = input.files[0] ? input.files[0].name : "errpt.out, .log, .snap, .txt";
-    document.getElementById('file-name').textContent = fileName;
-  }
-</script>
 {% endblock %}
